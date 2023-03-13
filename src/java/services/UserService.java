@@ -5,82 +5,55 @@
  */
 package services;
 
+import dataaccess.UserDB;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import models.Role;
+import models.User;
 
 /**
  *
  * @author David Doan <your.name at your.org>
  */
-public class UserService extends HttpServlet {
+public class UserService {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet UserService</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet UserService at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
+    public User get(String email) throws Exception {
+        //constructs userDB and get me that user based on email
+        UserDB userDB = new UserDB();
+        User user = userDB.get(email);
+        return user;
     }
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
+    public List<User> getAll() throws Exception {
+        //get all users
+        UserDB userDB = new UserDB();
+        List<User> users = userDB.getAll();
+        return users;
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        processRequest(request, response);
+    public void insert(String email, String firstName, String lastName, String password, Role role) throws Exception {
+        User user = new User(email, firstName, lastName, password, role);
+        UserDB userDB = new UserDB();
+        userDB.insert(user);
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+    //param from the servlet
+    public void update(String email, String firstName, String lastName, String password, Role role) throws Exception {
+        User user = new User(email, firstName, lastName, password, role);
+        UserDB userDB = new UserDB();
+        userDB.update(user);
+    }
 
+    public void delete(String email) throws Exception {
+        User user = new User();
+        user.setEmail(email);
+        UserDB userDB = new UserDB();
+        userDB.delete(user);
+    }
+    
 }

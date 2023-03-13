@@ -7,10 +7,17 @@ package servlets;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import models.User;
+import services.RoleService;
+import services.UserService;
 
 /**
  *
@@ -18,69 +25,129 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class UserServlet extends HttpServlet {
 
-    /**
-     * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
-     * methods.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
-    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<title>Servlet UserServlet</title>");            
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<h1>Servlet UserServlet at " + request.getContextPath() + "</h1>");
-            out.println("</body>");
-            out.println("</html>");
-        }
-    }
-
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /**
-     * Handles the HTTP <code>GET</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        HttpSession session = request.getSession();
+        //servlet-service-userdb
+        UserService us = new UserService();
+        RoleService rs = new RoleService();
+        String action = request.getParameter("action");
+
+        try {
+            List<User> users = us.getAll();
+            request.setAttribute("users", users);
+            if (users.isEmpty()) {
+                request.setAttribute("message", "empty");
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
+            request.setAttribute("message", "error");
+        }
+        if (action != null) {
+            if (action.equals("edit")) {
+                try {
+                    String email = request.getParameter("email");
+                    String role_name = request.getParameter("role");
+                    User user = us.get(email);
+                    request.setAttribute("email", email);
+                    request.setAttribute("selectedUser", user);
+                    request.setAttribute("message", "edit");
+                    
+                } catch (Exception ex) {
+                    Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } else if (action.equals("delete")) {
+                try {
+                    String email = request.getParameter("email");
+                    us.delete(email);
+                    request.setAttribute("message", "delete");
+                    response.sendRedirect("/");
+                    return;
+                } catch (Exception ex) {
+                    Logger.getLogger(UserServlet.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
     }
 
-    /**
-     * Handles the HTTP <code>POST</code> method.
-     *
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
-     */
+   
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+       UserService us = new UserService();
+        RoleService rs = new RoleService();
+
+        String email = request.getParameter("email");
+        String first = request.getParameter("first");
+        String last = request.getParameter("last");
+        String pw = request.getParameter("pw");
+        String id = request.getParameter("role"); //name
+        int user_role_id = 0;
+
+        String action = request.getParameter("action");
+
+        try {
+            List<User> users = us.getAll();
+            request.setAttribute("users", users);
+            if (email == null || email.equals("") || first == null || first.equals("") || last == null || last.equals("")
+                    || pw == null || pw.equals("")) {
+                request.setAttribute("mes", "All fields are required");
+                if (users.isEmpty()) {
+                    request.setAttribute("message", "empty");
+                }
+                getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+                return;
+            }
+
+            if (action != null) {
+                switch (action) {
+                    case "add":
+                        if (id.equals("1")) {
+                            user_role_id = 1;
+                        } else {
+                            user_role_id = 2;
+                        }
+                        //check the email                     
+                        for (int i = 0; i < users.size(); i++) {
+                            if (email.equals(users.get(i).getEmail())) {
+                                request.setAttribute("mes", "Error. Email is already taken");
+                                getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
+                            }
+                        }
+                        us.insert(email, first, last, pw, rs.get(user_role_id));
+                        request.setAttribute("message", "add");
+                        break;
+                    case "update":
+                        if (id.equals("system admin")) {
+                            user_role_id =1 ;
+                        } else{
+                           user_role_id = 2;
+                        }
+                        
+                        us.update(email, first, last, pw, rs.get(user_role_id));
+                        request.setAttribute("message", "update");
+                        break;
+                }
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(UserServlet.class
+                    .getName()).log(Level.SEVERE, null, ex);
+            request.setAttribute("message", "error");
+        }
+
+        try {
+            List<User> users = us.getAll();
+            request.setAttribute("users", users);
+
+        } catch (Exception ex) {
+            Logger.getLogger(UserServlet.class
+                    .getName()).log(Level.SEVERE, null, ex);
+            request.setAttribute("message", "error");
+        }
+        getServletContext().getRequestDispatcher("/WEB-INF/users.jsp").forward(request, response);
     }
 
-    /**
-     * Returns a short description of the servlet.
-     *
-     * @return a String containing servlet description
-     */
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
 
 }
